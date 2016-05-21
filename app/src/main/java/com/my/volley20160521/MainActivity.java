@@ -2,6 +2,8 @@ package com.my.volley20160521;
 
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button btn_loadNet_MainAct, btn_loadNetGet_MainAct, btn_loadNetXML_MainAct, btn_loadNetPost_MainAct;
     private TextView tv_netData_MainAct;
     private Dialog dialog;
+    private Handler mHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +70,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initData() {
+        //不能在主线程中更新UI
+        mHandler = new Handler(new Handler.Callback() {
+            @Override
+            public boolean handleMessage(Message msg) {
+                switch (msg.what) {
+                    case 0:
+                        Toast.makeText(MainActivity.this, "刷新！！！", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+                return false;
+            }
+        });
 
+        /**
+         * 这个线程为了实现定时访问网络，可以理解成一个定时器
+         */
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(5000);
+                        //mHandler.sendEmptyMessage(0);
+                        addNetDataPost();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
     @Override
@@ -180,7 +212,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     public void onResponse(String response) {
                         dialog.dismiss();
                         tv_netData_MainAct.setText(response + "");
-                        Toast.makeText(MainActivity.this, "Get请求成功！！！", Toast.LENGTH_SHORT).show();
+                        int i = 0;
+                        Toast.makeText(MainActivity.this, "Get请求成功！！！" + i++, Toast.LENGTH_SHORT).show();
                     }
                 },
                 new Response.ErrorListener() {
@@ -199,14 +232,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * Post请求
      */
     private void addNetDataPost() {
-        String str="http://apis.juhe.cn/mobile/get";    //查询手机号码归属地的API
+        String str = "http://apis.juhe.cn/mobile/get";    //查询手机号码归属地的API
         RequestQueue queue = Volley.newRequestQueue(this);
         StringRequest request = new StringRequest(Request.Method.POST, str,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         dialog.dismiss();
-                        tv_netData_MainAct.setText(response+"");
+                        tv_netData_MainAct.setText(response + "");
                         Toast.makeText(MainActivity.this, "Post请求成功！！！", Toast.LENGTH_SHORT).show();
                     }
                 },
@@ -214,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         dialog.dismiss();
-                        tv_netData_MainAct.setText(error+"");
+                        tv_netData_MainAct.setText(error + "");
                         Toast.makeText(MainActivity.this, "Post请求失败！！!", Toast.LENGTH_SHORT).show();
                     }
                 }) {
@@ -224,17 +257,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 HashMap<String, String> map = new HashMap<>();
 //                map.put("key", "bb97bfce9edee938aeac99cb503b76db");
 //                map.put("cardno", "210283199409245532");
-               // map.put("tel","15164054795");
+                // map.put("tel","15164054795");
                 //这个顺序可以改变比一定要按照顺序写
-                map.put("key","5b20adf6f27bd3e78c9e5b05ffdabac2");
-                map.put("dtype","json");
-                map.put("phone","15164054795");
+                map.put("key", "5b20adf6f27bd3e78c9e5b05ffdabac2");
+                map.put("dtype", "xml");
+                map.put("phone", "15164054795");
                 return map;
             }
         };
 
         queue.add(request);
     }
-
-
 }
